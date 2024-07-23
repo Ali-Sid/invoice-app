@@ -1,6 +1,18 @@
-import { Box, Input, FormControl, FormLabel } from "@chakra-ui/react";
+import { CloseIcon } from "@chakra-ui/icons";
+import {
+  Box,
+  Input,
+  FormControl,
+  FormLabel,
+  Text,
+  Image,
+  IconButton,
+} from "@chakra-ui/react";
+import { useState } from "react";
+import About from "./About";
 
 const Expense = () => {
+
   return (
     <Box
       style={{
@@ -10,13 +22,17 @@ const Expense = () => {
         alignItems: "flex-start",
         // backgroundColor: "#000",
         width: "100%",
-        marginLeft: "0",
+        height: "auto",
+        // marginLeft: "-50px",
         position: "absolute",
         boxSizing: "border-box",
-        left: "0"
+        top: "100%",
+        left: "0",
+        padding: "0 20px",
+        // right: "20px"
       }}
     >
-      <h1>hello</h1>
+      <About />
     </Box>
   );
 };

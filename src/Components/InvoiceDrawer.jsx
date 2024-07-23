@@ -1,5 +1,6 @@
 import { useSelector, useDispatch } from "react-redux";
-import { addInvoice } from "../redux/InvoiceSlice";
+import { addInvoice, editInvoice } from "../redux/InvoiceSlice";
+import { v4 as uuidv4 } from "uuid";
 import {
   useDisclosure,
   Drawer,
@@ -26,24 +27,39 @@ import {
 import { FaPlus } from "react-icons/fa";
 import { useState, useEffect, useCallback } from "react";
 import { db } from "./db";
+import PropTypes from "prop-types";
 // import { RepeatIcon } from "@chakra-ui/icons";
 // import { AiOutlinePercentage } from "react-icons/ai";
 
-const InvoiceDrawer = ({ isOpen, onOpen, onClose }) => {
+const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
   const dispatch = useDispatch();
   // const invoices = useSelector((state) => state.invoices)
 
   const [lineItems, setLineItems] = useState([
-    { formData : { itemName: "", quantity: 0, rate: 0, amount: 0 } },
+    { itemName: "", quantity: 0, rate: 0, amount: 0 },
   ]);
 
   const [selectedCurrency, setSelectedCurrency] = useState("$");
 
   const [invoices, setInvoices] = useState([]);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
 
-  const [currentInvoiceNumber, setCurrentInvoiceNumber] = useState(1);
+  // const [currentInvoiceNumber, setCurrentInvoiceNumber] = useState(1);
+
+  function generateInvoiceNumber() {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = ("0" + (d.getMonth() + 1)).slice(-2); // Add leading zero for single digit months
+    const day = ("0" + d.getDate()).slice(-2); // Add leading zero for single digit days
+    const hours = ("0" + d.getHours()).slice(-2); // Add leading zero for single digit hours
+    const minutes = ("0" + d.getMinutes()).slice(-2); // Add leading zero for single digit minutes
+
+    const invoiceNumber = "" + year + month + day + hours + minutes;
+    return invoiceNumber;
+  }
 
   const [formData, setFormData] = useState({
+    invoiceNumber: generateInvoiceNumber(),
     customerName: "",
     email: "",
     phoneNumber: "",
@@ -60,57 +76,179 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose }) => {
     balanceDue: 0,
   });
 
+  // Effect to update formData whenever lineItems changes
+  useEffect(() => {
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      lineItems: lineItems, // Update lineItems in formData
+    }));
+  }, [lineItems]);
+
+  useEffect(() => {
+    if (selectedInvoice) {
+      setFormData(selectedInvoice);
+    } else {
+      resetForm();
+    }
+  }, [selectedInvoice]);
+
+  // const handleInputChange = (event) => {
+  //   const { name, value } = event.target;
+  //   console.log(`Input changed: ${name}, new value: ${value}`);
+
+  //   if (name.startsWith("lineItems")) {
+  //     const [_, index, field] = name.split(".");
+  //     const updatedLineItems = [...formData.lineItems];
+  //     updatedLineItems[parseInt(index)][field] = value;
+  //     setFormData((prevFormData) => ({
+  //       ...prevFormData,
+  //       lineItems: updatedLineItems,
+  //     }));
+  //   } else {
+  //     setFormData((prevFormData) => ({
+  //       ...prevFormData,
+  //       [name]: value,
+  //     }));
+  //   }
+  // };
+
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-   
-    setFormData((prevFormData) => {
-      let newValue = value;
-   
-      // Check if the input is expected to be a number
-      if (['quantity', 'rate', 'amountPaid', 'balanceDue'].includes(name)) {
-        newValue = Number(value);
-      }
-   
-      return {
+
+    // Check if the input belongs to a line item
+    if (name.startsWith("lineItems")) {
+      const [_, index, field] = name.split(".");
+      const updatedLineItems = formData.lineItems.map((item, i) => {
+        if (i === parseInt(index)) {
+          return { ...item, [field]: value };
+        }
+        return item;
+      });
+
+      // Update formData with the modified lineItems array
+      setFormData((prevFormData) => ({
         ...prevFormData,
-        [name]: newValue, // Use newValue instead of value
-      };
-    });
-   };
-   
+        lineItems: updatedLineItems,
+      }));
+    } else {
+      // Handle regular input fields
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        [name]: value,
+      }));
+    }
+  };
 
+  // Update the handleEditInvoice function to set the selected invoice ID
+  const handleEditInvoice = (invoiceId) => {
+    setSelectedInvoiceId(invoiceId);
+    onOpen();
+  };
+
+  const handleUpdate = (updatedInvoice) => {
+    const updatedInvoices = invoices.map((invoice) =>
+      invoice.id === updatedInvoice.id ? updatedInvoice : invoice
+    );
+
+    dispatch(editInvoice(updatedInvoices));
+    // setRows((prevRows) =>
+    //   prevRows.map((row) => (row.id === newInvoice.id ? newInvoice : row))
+    // ); // Update rows based on updated invoice
+  };
+
+  // const handleSubmit = () => {
+  //   // const totalAmount = calculateTotal();
+
+  //   const newInvoice = {
+  //     id: uuidv4(),
+  //     invoiceNumber: formData.invoiceNumber,
+  //     date: new Date().toLocaleDateString(),
+  //     customerName: formData.customerName,
+  //     email: formData.email,
+  //     phoneNumber: formData.phoneNumber,
+  //     streetAddress: formData.streetAddress,
+  //     city: formData.city,
+  //     postalCode: formData.postalCode,
+  //     country: formData.country,
+  //     description: formData.description,
+  //     lineItems: formData.lineItems,
+  //     total: calculateTotal(),
+  //   };
+
+  //   // setCurrentInvoiceNumber(currentInvoiceNumber + 1);
+
+  //   // Add the new invoice to the invoices state
+  //   setInvoices((prevInvoices) => [...prevInvoices, newInvoice]);
+
+  //   // const existingInvoices = JSON.parse(localStorage.getItem("invoices")) || [];
+  //   // const updatedInvoices = [...existingInvoices, newInvoice];
+
+  //   // setInvoices(updatedInvoices);
+  //   db.table("invoices")
+  //     .put(newInvoice)
+  //     .then(() => {
+  //       handleUpdate(newInvoice);
+  //       onClose();
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error storing invoice", error);
+  //     });
+
+  //   // localStorage.setItem("invoices", JSON.stringify(updatedInvoices));
+  //   dispatch(addInvoice(newInvoice));
+
+  //   // Close the drawer after submitting the form
+  //   onClose();
+  // };
+
+  // Update the handleSubmit function to handle updating existing invoices
   const handleSubmit = () => {
-    // const totalAmount = calculateTotal();
-
     const newInvoice = {
-      invoiceNumber: currentInvoiceNumber,
-      date: new Date().toLocaleDateString(),
-      customerName: formData.customerName,
-      email: formData.email,
-      phoneNumber: formData.phoneNumber,
-      streetAddress: formData.streetAddress,
-      city: formData.city,
-      postalCode: formData.postalCode,
-      country: formData.country,
-      description: formData.description,
-      lineItems: formData.lineItems,
-      total: calculateTotal()
+      id: selectedInvoiceId || uuidv4(), // Use existing ID for editing or generate a new one
+      ...formData,
+      total: calculateTotal(),
     };
 
-    setCurrentInvoiceNumber(currentInvoiceNumber + 1);
+    if (selectedInvoiceId) {
+      handleUpdate(newInvoice); // Update existing invoice
+    } else {
+      setInvoices([...invoices, newInvoice]); // Add new invoice
+    }
 
-    // const existingInvoices = JSON.parse(localStorage.getItem("invoices")) || [];
-    // const updatedInvoices = [...existingInvoices, newInvoice];
+    if (selectedInvoice) {
+      dispatch(editInvoice(newInvoice));
+    } else {
+      addInvoice(newInvoice);
+    }
 
-    // setInvoices(updatedInvoices);
     db.table("invoices")
       .put(newInvoice)
+      .then(() => {
+        onClose();
+      })
       .catch((error) => {
         console.error("Error storing invoice", error);
       });
+  };
 
-    // localStorage.setItem("invoices", JSON.stringify(updatedInvoices));
-    dispatch(addInvoice(newInvoice));
+  const resetForm = () => {
+    setFormData({
+      invoiceNumber: generateInvoiceNumber(),
+      customerName: "",
+      email: "",
+      phoneNumber: "",
+      streetAddress: "",
+      city: "",
+      postalCode: "",
+      country: "",
+      invoiceDate: "",
+      description: "",
+      lineItems: [{ itemName: "", quantity: 0, rate: 0, amount: 0 }],
+      subtotal: 0,
+      extraFields: [],
+      amountPaid: 0,
+      balanceDue: 0,
+    });
   };
 
   const [subtotal, setSubtotal] = useState(0);
@@ -133,45 +271,34 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose }) => {
       amount: 0,
     };
     setLineItems([...lineItems, newLineItem]);
+    console.log([...lineItems, newLineItem]);
   };
 
+  // Use a functional update to avoid direct mutation
   const handleItemChange = (index, field, value) => {
+    console.log(
+      `Updating item at index ${index}, field: ${field}, new value: ${value}`
+    );
     setLineItems((prevLineItems) =>
       prevLineItems.map((item, i) => {
         if (i !== index) return item;
-
-        const newQuantity = field === "quantity" ? Number(value) : item.quantity;
-        const newRate = field === "rate" ? Number(value) : item.rate;
-
-        return {
-          ...item.formData,
-          [field]: value,
-          amount: newQuantity * newRate,
-        };
+        switch (field) {
+          case "quantity":
+            return { ...item, quantity: Number(value) };
+          case "rate":
+            return { ...item, rate: Number(value) };
+          default:
+            return item;
+        }
       })
     );
-    setFormData((prevFormData) => {
-      const updatedLineItems = prevFormData.lineItems.map((item, i) => {
-        if (i !== index) return item;
 
-        const newQuantity = field === "quantity" ? value : item.quantity;
-        const newRate = field === "rate" ? value : item.rate;
-
-        // Recalculate the amount based on the new quantity and rate
-        const newAmount = newQuantity * newRate;
-
-        return {
-          ...item,
-          [field]: value,
-          amount: newAmount,
-        };
-      });
-
-      return {
-        ...prevFormData,
-        lineItems: updatedLineItems,
-      };
-    });
+    // Update formData with the updated lineItems
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      lineItems: [...lineItems], // Spread the updated array
+    }));
+    console.log(formData)
   };
 
   const handleDeleteLineItem = (index) => {
@@ -211,6 +338,12 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose }) => {
   //     )
   //   );
   // };
+
+  const handleChange = (e, index) => {
+    const values = [...lineItems];
+    values[index][e.target.name] = e.target.value;
+    setLineItems(values);
+  };
 
   // for adding extra fields when the a button is clicked
   const handleAddExtraField = (fieldType, value) => {
@@ -323,7 +456,9 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose }) => {
       <DrawerOverlay />
       <DrawerContent pl="120px" pr="50px">
         <DrawerCloseButton />
-        <DrawerHeader fontSize="xx-large">Create Invoice</DrawerHeader>
+        <DrawerHeader fontSize="xx-large">
+          {selectedInvoice ? "Edit Invoice" : "Create New Invoice"}
+        </DrawerHeader>
 
         <DrawerBody>
           <Text fontSize="large" color="blue">
@@ -344,9 +479,16 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose }) => {
               <FormLabel fontSize="24px">
                 <b>Invoice:</b>
               </FormLabel>
-              <Text fontSize="24px">
-                <b>#{currentInvoiceNumber}</b>
+              <Text fontSize="24px" mr={2}>
+                <b>#</b>
               </Text>
+              <Input
+                w="25%"
+                type="number"
+                name="invoiceNumber"
+                value={formData.invoiceNumber || ""}
+                onChange={handleInputChange}
+              />
             </div>
 
             <FormLabel>Customer Name</FormLabel>
@@ -443,20 +585,34 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose }) => {
                   <FormLabel>Item Name</FormLabel>
                   <Input
                     w="auto"
-                    name="itemName"
+                    name={`lineItems[${index}].itemName`}
                     value={item.itemName}
-                    onChange={handleInputChange}
+                    // onChange={handleInputChange}
+                    // onChange={(e) => handleChange(e, index)}
+                    onChange={(e) =>
+                      handleItemChange(index, "itemName", e.target.value)
+                    }
                   />
                 </div>
                 <div>
                   <FormLabel>Qty.</FormLabel>
                   <NumberInput
                     w="80px"
-                    name="quantity"
+                    // name="quantity"
+                    name={`lineItems[${index}].quantity`}
                     value={item.quantity}
                     onChange={(valueNumber) =>
                       handleItemChange(index, "quantity", valueNumber)
                     }
+                    // onChange={(valueString) =>
+                    //   handleInputChange({
+                    //     target: {
+                    //       name: `lineItems[${index}].quantity`,
+                    //       value: Number(valueString),
+                    //     },
+                    //   })
+                    // }
+                    // onChange={(e) => handleChange(e, index)}
                   >
                     <NumberInputField />
                   </NumberInput>
@@ -470,6 +626,10 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose }) => {
                     onChange={(valueNumber) =>
                       handleItemChange(index, "rate", valueNumber)
                     }
+                    // onChange={(valueString) => handleInputChange({
+                    //   target: { name: `lineItems[${index}].rate`, value: Number(valueString) }
+                    // })}
+                    // onChange={(e) => handleChange(e, index)}
                   >
                     <NumberInputField />
                   </NumberInput>
@@ -682,12 +842,18 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose }) => {
             Cancel
           </Button>
           <Button onClick={handleSubmit} type="submit" colorScheme="blue">
-            Create
+            {selectedInvoice ? "Update" : "Create"}
           </Button>
         </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );
+};
+
+InvoiceDrawer.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onOpen: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
 };
 
 export default InvoiceDrawer;

@@ -1,15 +1,20 @@
-// import React from 'react'
+import React from 'react'
 import { Box, Image } from "@chakra-ui/react";
-import logo from "/Invoices.png";
+import logo from "/enlarge_Invoices.png";
 
 const Navbar = () => {
   const navStyle = {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
     height: '60px',
-    // backgroundColor: '#333',
-    color: '#fff',
+    backgroundColor: '#fff',
+    // color: '#fff',
+    zIndex: 10
   }
 
   const logoStyle = {
@@ -33,7 +38,7 @@ const Navbar = () => {
         />
       </Box> */}
       {/* <img src={logo} alt="logo" style={{width: "120px", marginLeft: 0}}/> */}
-      <div style={logoStyle}><img src={logo} alt="logo" style={{width: "300px"}} /></div>
+      <div style={logoStyle}><img src={logo} alt="logo" style={{width: "250px"}} /></div>
       <div style={navLinksStyle}>
         <a href="#">Home</a>
         <a href="#">Contacts</a>
