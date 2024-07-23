@@ -30,6 +30,7 @@ import InvoiceDrawer from "./InvoiceDrawer";
 import { db } from "./db";
 import { DataGrid } from "@mui/x-data-grid";
 import { createTheme, ThemeProvider } from "@mui/material/styles"; // Import ThemeProvider and createTheme
+import InvoiceDetailsDrawer from "./InvoiceDetailsDrawer";
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -45,6 +46,17 @@ const Home = () => {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
   const [invoiceToDelete, setInvoiceToDelete] = useState(null);
   const cancelRef = useRef();
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+  const handleRowClick = (params) => {
+    const selectedInvoice = invoices.find((inv) => inv.id === params.row.id);
+    setSelectedInvoiceId(selectedInvoice);
+    setIsDetailsOpen(true);
+  };
+
+  const handleDetailsClose = () => {
+    setIsDetailsOpen(false);
+  };
 
   const addNewInvoice = (newInvoice) => {
     const filteredInvoices = invoices.filter((inv) => inv.id !== newInvoice.id);
@@ -88,18 +100,16 @@ const Home = () => {
   // const handleEditInvoice = (invoiceId) => {
   //   // Find the invoice by ID
   //   const selectedInvoice = invoices.find((inv) => inv.id === invoiceId);
-  
+
   //   // Assuming "items" is the property containing item details
   //   const selectedItemData = {
   //     ...selectedInvoice, // Copy other invoice details
   //     lineItems: selectedInvoice.lineItems ? [...selectedInvoice.lineItems] : [], // Copy items array
   //   };
-  
+
   //   setSelectedInvoiceId(selectedItemData);
   //   onOpen();
   // };
-  
-  
 
   const handleDeleteInvoice = async () => {
     try {
@@ -208,9 +218,15 @@ const Home = () => {
               boxShadow: 1,
               borderRadius: "5px",
             }}
+            onRowClick={handleRowClick}
           />
         </ThemeProvider>
       </div>
+      <InvoiceDetailsDrawer
+        isOpen={isDetailsOpen}
+        onClose={handleDetailsClose}
+        selectedInvoice={selectedInvoiceId}
+      />
       <InvoiceDrawer
         isOpen={isOpen}
         onOpen={onOpen}

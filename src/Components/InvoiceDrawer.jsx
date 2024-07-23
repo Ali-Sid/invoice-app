@@ -274,50 +274,70 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
     console.log([...lineItems, newLineItem]);
   };
 
-  // Use a functional update to avoid direct mutation
-  const handleItemChange = (index, field, value) => {
-    console.log(
-      `Updating item at index ${index}, field: ${field}, new value: ${value}`
-    );
-    setLineItems((prevLineItems) =>
-      prevLineItems.map((item, i) => {
-        if (i !== index) return item;
-        switch (field) {
-          case "quantity":
-            return { ...item, quantity: Number(value) };
-          case "rate":
-            return { ...item, rate: Number(value) };
-          default:
-            return item;
-        }
-      })
-    );
+  // // Use a functional update to avoid direct mutation
+  // const handleItemChange = (index, event) => {
+  //   console.log(event);
+  //   const { name, value } = event.target;
+  //   console.log(
+  //     `Updating item at index ${index}, field: ${name}, new value: ${value}`
+  //   );
+  //   setLineItems((prevLineItems) =>
+  //     prevLineItems.map((item, i) =>
+  //       i === index ? { ...item, [name]: value } : item
+  //     )
+  //   );
+
+  //   // Update formData with the updated lineItems
+  //   setFormData((prevFormData) => ({
+  //     ...prevFormData,
+  //     lineItems: [...lineItems], // Spread the updated array
+  //   }));
+  //   console.log(formData);
+  // };
+
+  // const handleDeleteLineItem = (index) => {
+  //   setLineItems((prevLineItems) =>
+  //     prevLineItems.filter((_item, i) => i !== index)
+  //   );
+  // };
+
+  // useEffect(() => {
+  //   const updateSubtotal = () => {
+  //     const totalAmount = lineItems.reduce(
+  //       (total, item) => total + item.amount,
+  //       0
+  //     );
+  //     setSubtotal(totalAmount);
+  //   };
+
+  //   updateSubtotal();
+  // }, [lineItems]);
+
+  const handleItemChange = (index, event) => {
+    const { name, value } = event.target;
+    let updatedLineItems = [...lineItems];
+    let item = { ...updatedLineItems[index] };
+    item[name] = value;
+
+    // if (name === "quantity" || name === "rate") {
+    //   item.amount = item.quantity * item.rate;
+    // }
+
+    if (name === "quantity" || name === "rate") {
+      const quantity = parseFloat(item.quantity);
+      const rate = parseFloat(item.rate);
+      item.amount = isNaN(quantity) || isNaN(rate) ? 0 : quantity * rate;
+    }
+
+    updatedLineItems[index] = item;
+    setLineItems(updatedLineItems);
 
     // Update formData with the updated lineItems
     setFormData((prevFormData) => ({
       ...prevFormData,
-      lineItems: [...lineItems], // Spread the updated array
+      lineItems: [...updatedLineItems], // Spread the updated array
     }));
-    console.log(formData)
   };
-
-  const handleDeleteLineItem = (index) => {
-    setLineItems((prevLineItems) =>
-      prevLineItems.filter((_item, i) => i !== index)
-    );
-  };
-
-  useEffect(() => {
-    const updateSubtotal = () => {
-      const totalAmount = lineItems.reduce(
-        (total, item) => total + item.amount,
-        0
-      );
-      setSubtotal(totalAmount);
-    };
-
-    updateSubtotal();
-  }, [lineItems]);
 
   // For Tax Field
   //   const handleTaxMode = () => {
@@ -348,10 +368,12 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
   // for adding extra fields when the a button is clicked
   const handleAddExtraField = (fieldType, value) => {
     console.log(`Adding ${fieldType}:`, value);
-    setExtraFields((prevExtraFields) => [
-      ...prevExtraFields,
-      { type: fieldType, amount: value },
-    ]);
+    const newField = {
+      id: uuidv4(), // Generate a unique ID for the new field
+      type: fieldType,
+      amount: value,
+    };
+    setExtraFields((prevExtraFields) => [...prevExtraFields, newField]);
   };
 
   // for handling the values in the extra fields
@@ -370,79 +392,122 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
     });
   };
 
-  const calculateTotal = useCallback(() => {
-    try {
-      let total = subtotal;
-      console.log("Subtotal:", subtotal);
+  // const calculateTotal = useCallback(() => {
+  //   try {
+  //     let total = subtotal;
+  //     console.log("Subtotal:", subtotal);
 
-      // Calculate tax amount
-      const taxFields = extraFields.filter((field) => field.type === "Tax");
-      const taxRate =
-        taxFields.length > 0
-          ? taxFields.reduce(
-              (acc, field) =>
-                acc +
-                (field.isPercentageMode
-                  ? (subtotal * field.amount) / 100
-                  : parseFloat(field.amount)),
-              0
-            )
-          : 0;
+  //     // Calculate tax amount
+  //     const taxFields = extraFields.filter((field) => field.type === "Tax");
+  //     const taxRate =
+  //       taxFields.length > 0
+  //         ? taxFields.reduce(
+  //             (acc, field) =>
+  //               acc +
+  //               (field.isPercentageMode
+  //                 ? (subtotal * field.amount) / 100
+  //                 : parseFloat(field.amount)),
+  //             0
+  //           )
+  //         : 0;
 
-      console.log("Tax Field", taxFields);
-      console.log("Tax Rate:", taxRate);
+  //     console.log("Tax Field", taxFields);
+  //     console.log("Tax Rate:", taxRate);
 
-      // Calculate discount amount
-      const discountFields = extraFields.filter(
-        (field) => field.type === "Discount"
-      );
-      const discountRate =
-        discountFields.length > 0
-          ? discountFields.reduce(
-              (acc, field) =>
-                acc +
-                (field.isPercentageMode
-                  ? (subtotal * field.amount) / 100
-                  : parseFloat(field.amount)),
-              0
-            )
-          : 0;
+  //     // Calculate discount amount
+  //     const discountFields = extraFields.filter(
+  //       (field) => field.type === "Discount"
+  //     );
+  //     const discountRate =
+  //       discountFields.length > 0
+  //         ? discountFields.reduce(
+  //             (acc, field) =>
+  //               acc +
+  //               (field.isPercentageMode
+  //                 ? (subtotal * field.amount) / 100
+  //                 : parseFloat(field.amount)),
+  //             0
+  //           )
+  //         : 0;
 
-      console.log("Discount Rate:", discountRate);
+  //     console.log("Discount Rate:", discountRate);
 
-      // Calculate shipping charges
-      const shippingFields = extraFields.filter(
-        (field) => field.type === "Shipping"
-      );
-      const shippingCharge =
-        shippingFields.length > 0
-          ? shippingFields.reduce(
-              (acc, field) =>
-                acc +
-                (field.isPercentageMode
-                  ? (subtotal * field.amount) / 100
-                  : parseFloat(field.amount)),
-              0
-            )
-          : 0;
+  //     // Calculate shipping charges
+  //     const shippingFields = extraFields.filter(
+  //       (field) => field.type === "Shipping"
+  //     );
+  //     const shippingCharge =
+  //       shippingFields.length > 0
+  //         ? shippingFields.reduce(
+  //             (acc, field) =>
+  //               acc +
+  //               (field.isPercentageMode
+  //                 ? (subtotal * field.amount) / 100
+  //                 : parseFloat(field.amount)),
+  //             0
+  //           )
+  //         : 0;
 
-      console.log("Shipping Charge:", shippingCharge);
+  //     console.log("Shipping Charge:", shippingCharge);
 
-      total += taxRate + shippingCharge - discountRate;
+  //     total += taxRate + shippingCharge - discountRate;
 
-      console.log("Total:", total);
+  //     console.log("Total:", total);
 
-      return total;
-    } catch (error) {
-      console.error("Error calculating total:", error);
-    }
-  }, [extraFields, subtotal]);
+  //     return total;
+  //   } catch (error) {
+  //     console.error("Error calculating total:", error);
+  //   }
+  // }, [extraFields, subtotal]);
+
+  // const calculateTotal = useCallback(() => {
+  //   let total = 0;
+  //   lineItems.forEach((item) => {
+  //     total += item.amount;
+  //   });
+  //   return total;
+  // }, [lineItems]);
+
+  // useEffect(() => {
+  //   const total = calculateTotal();
+  //   setAmountPaid(total);
+  //   setBalanceDue(total);
+  // }, [calculateTotal, extraFields, subtotal]);
+
+  const calculateSubtotal = useCallback(() => {
+    let subtotal = 0;
+    lineItems.forEach((item) => {
+      subtotal += item.amount;
+    });
+    setSubtotal(subtotal);
+  }, [lineItems]);
 
   useEffect(() => {
-    const total = calculateTotal();
-    setAmountPaid(total);
-    setBalanceDue(total);
-  }, [calculateTotal, extraFields, subtotal]);
+    calculateSubtotal();
+  }, [calculateSubtotal]);
+
+  const calculateTotal = useCallback(() => {
+    let total = subtotal;
+    extraFields.forEach((field) => {
+      if (field.type === "Tax") {
+        total += field.isPercentageMode
+          ? subtotal * (parseFloat(field.amount) / 100)
+          : parseFloat(field.amount);
+      } else if (field.type === "Discount") {
+        total -= field.isPercentageMode
+          ? subtotal * (parseFloat(field.amount) / 100)
+          : parseFloat(field.amount);
+      } else if (field.type === "Shipping") {
+        total += parseFloat(field.amount);
+      }
+    });
+    return total;
+  }, [subtotal, extraFields]);
+
+  useEffect(() => {
+    setAmountPaid(calculateTotal());
+    setBalanceDue(calculateTotal());
+  }, [calculateTotal]);
 
   return (
     <Drawer
@@ -585,34 +650,25 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
                   <FormLabel>Item Name</FormLabel>
                   <Input
                     w="auto"
-                    name={`lineItems[${index}].itemName`}
+                    name="itemName"
                     value={item.itemName}
-                    // onChange={handleInputChange}
-                    // onChange={(e) => handleChange(e, index)}
-                    onChange={(e) =>
-                      handleItemChange(index, "itemName", e.target.value)
-                    }
+                    onChange={(e) => handleItemChange(index, e)}
                   />
                 </div>
                 <div>
                   <FormLabel>Qty.</FormLabel>
                   <NumberInput
                     w="80px"
-                    // name="quantity"
-                    name={`lineItems[${index}].quantity`}
+                    name="quantity"
                     value={item.quantity}
                     onChange={(valueNumber) =>
-                      handleItemChange(index, "quantity", valueNumber)
+                      handleItemChange(index, {
+                        target: {
+                          name: "quantity",
+                          value: valueNumber,
+                        },
+                      })
                     }
-                    // onChange={(valueString) =>
-                    //   handleInputChange({
-                    //     target: {
-                    //       name: `lineItems[${index}].quantity`,
-                    //       value: Number(valueString),
-                    //     },
-                    //   })
-                    // }
-                    // onChange={(e) => handleChange(e, index)}
                   >
                     <NumberInputField />
                   </NumberInput>
@@ -624,12 +680,13 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
                     name="rate"
                     value={item.rate}
                     onChange={(valueNumber) =>
-                      handleItemChange(index, "rate", valueNumber)
+                      handleItemChange(index, {
+                        target: {
+                          name: "rate",
+                          value: valueNumber,
+                        },
+                      })
                     }
-                    // onChange={(valueString) => handleInputChange({
-                    //   target: { name: `lineItems[${index}].rate`, value: Number(valueString) }
-                    // })}
-                    // onChange={(e) => handleChange(e, index)}
                   >
                     <NumberInputField />
                   </NumberInput>
@@ -646,9 +703,8 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
                     {item.amount}
                   </Text>
                 </div>
-                {/* <IconButton aria-label="delete" icon={DeleteIcon}/> */}
                 <CloseButton
-                  onClick={() => handleDeleteLineItem(index)}
+                  onClick={() => handleDeleteField(index)}
                   aria-label="close-button"
                   mt="35px"
                 />
@@ -722,7 +778,7 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
               <div style={{ marginTop: "10px" }}>
                 {!extraFields.some((field) => field.type === "Tax") && (
                   <Button
-                    onClick={(e) => handleAddExtraField("Tax", e.target.value)}
+                    onClick={(e) => handleAddExtraField("Tax", 0)}
                     variant="outlined"
                     color="green"
                     gap="5px"
@@ -736,7 +792,7 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
                 {!extraFields.some((field) => field.type === "Discount") && (
                   <Button
                     onClick={(e) =>
-                      handleAddExtraField("Discount", e.target.value)
+                      handleAddExtraField("Discount", 0)
                     }
                     variant="outlined"
                     color="green"
@@ -751,7 +807,7 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
                 {!extraFields.some((field) => field.type === "Shipping") && (
                   <Button
                     onClick={(e) =>
-                      handleAddExtraField("Shipping", e.target.value)
+                      handleAddExtraField("Shipping", 0)
                     }
                     variant="outlined"
                     color="green"
