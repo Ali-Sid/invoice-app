@@ -7,43 +7,90 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerOverlay,
+  Box,
+  Flex,
+  Text,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
 } from "@chakra-ui/react";
 import React from "react";
 
-const InvoiceDetailsDrawer = ({ isOpen, onClose, selectedInvoice }) => {
+const InvoiceDetailsDrawer = ({ isOpen, onClose, selectedInvoice, profile }) => {
   if (!selectedInvoice) return null;
 
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} placement="right" size="lg">
+    <Drawer isOpen={isOpen} onClose={onClose} placement="right" size="xxl">
       <DrawerOverlay />
       <DrawerContent>
         <DrawerCloseButton />
         <DrawerHeader>Invoice Details</DrawerHeader>
         <DrawerBody>
-          <h2>Invoice Number: {selectedInvoice.invoiceNumber}</h2>
-          <p>ID: {selectedInvoice.id}</p>
-          <p>Date: {selectedInvoice.date}</p>
-          <p>Customer Name: {selectedInvoice.customerName}</p>
-          <p>Email: {selectedInvoice.email}</p>
-          <p>Phone Number: {selectedInvoice.phoneNumber}</p>
-          <p>Street Address: {selectedInvoice.streetAddress}</p>
-          <p>City: {selectedInvoice.city}</p>
-          <p>Postal Code: {selectedInvoice.postalCode}</p>
-          <p>Country: {selectedInvoice.country}</p>
-          <p>Description: {selectedInvoice.description}</p>
-          <p>Total: {selectedInvoice.total}</p>
-
-          <h3>Line Items:</h3>
-          <ul>
-            {selectedInvoice.lineItems.map((item, index) => (
-              <li key={index}>
-                <p>Item Name: {item.itemName}</p>
-                <p>Quantity: {item.quantity}</p>
-                <p>Rate: {item.rate}</p>
-                <p>Amount: {item.amount}</p>
-              </li>
-            ))}
-          </ul>
+          <Flex width="100%" mb={4}>
+            <Box width="50%">
+              <Text fontSize="lg" fontWeight="bold">
+                Billed By:
+              </Text>
+              {/* <Text>{profile.businessName}</Text>
+              <Text>{profile.address}</Text>
+              <Text>{profile.gstRegisteredNumber}</Text>
+              <Text>{profile.pan}</Text>
+              <Text>{profile.email}</Text>
+              <Text>{profile.phoneNumber}</Text> */}
+            </Box>
+            <Box width="50%">
+              <Text fontSize="lg" fontWeight="bold">
+                Billed To:
+              </Text>
+              <Text>{selectedInvoice.customerName}</Text>
+              <Text>{selectedInvoice.streetAddress},</Text>
+              <Text>{selectedInvoice.city},</Text>
+              <Text>{selectedInvoice.postalCode},</Text>
+              <Text>{selectedInvoice.country}</Text>
+              <Text>{selectedInvoice.email}</Text>
+              <Text>{selectedInvoice.phoneNumber}</Text>
+            </Box>
+          </Flex>
+          <Box mb={4}>
+            <Text fontSize="lg" fontWeight="bold">
+              Invoice Details:
+            </Text>
+            <Text>Invoice Number: {selectedInvoice.invoiceNumber}</Text>
+            <Text>ID: {selectedInvoice.id}</Text>
+            <Text>Date: {selectedInvoice.date}</Text>
+            <Text>Description: {selectedInvoice.description}</Text>
+          </Box>
+          <Table variant="striped" colorScheme="gray">
+            <Thead>
+              <Tr>
+                <Th>Item Name</Th>
+                <Th>Quantity</Th>
+                <Th>Rate</Th>
+                <Th>Amount</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {selectedInvoice.lineItems.map((item, index) => (
+                <Tr key={index}>
+                  <Td>{item.itemName}</Td>
+                  <Td>{item.quantity}</Td>
+                  <Td>{item.rate}</Td>
+                  <Td>{item.amount}</Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+          <Box mt={4} textAlign="right">
+            <Text fontSize="lg" fontWeight="bold">
+              Total: {selectedInvoice.total}
+            </Text>
+            <Text fontSize="lg" fontWeight="bold">
+              Balance Due: {selectedInvoice.balanceDue}
+            </Text>
+          </Box>
         </DrawerBody>
         <DrawerFooter>
           <Button onClick={onClose}>Close</Button>

@@ -1,6 +1,7 @@
 import React from 'react'
 import { Box, Image } from "@chakra-ui/react";
 import logo from "/enlarge_Invoices.png";
+import Profile from './Profile';
 
 const Navbar = () => {
   const navStyle = {
@@ -43,6 +44,7 @@ const Navbar = () => {
         <a href="#">Home</a>
         <a href="#">Contacts</a>
         <a href="#">Recent Bills</a>
+        <Profile />
       </div>
     </nav>
   );

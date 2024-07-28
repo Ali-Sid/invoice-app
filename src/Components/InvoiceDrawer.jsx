@@ -130,6 +130,13 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
         ...prevFormData,
         lineItems: updatedLineItems,
       }));
+
+      if (name === "invoiceDate") {
+        setFormData((prevFormData) => ({
+          ...prevFormData,
+          invoiceDate: value,
+        }));
+      }
     } else {
       // Handle regular input fields
       setFormData((prevFormData) => ({
@@ -225,6 +232,7 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
       .put(newInvoice)
       .then(() => {
         onClose();
+        setInvoices((prevInvoices) => [...prevInvoices, newInvoice]);
       })
       .catch((error) => {
         console.error("Error storing invoice", error);
@@ -319,10 +327,6 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
     let item = { ...updatedLineItems[index] };
     item[name] = value;
 
-    // if (name === "quantity" || name === "rate") {
-    //   item.amount = item.quantity * item.rate;
-    // }
-
     if (name === "quantity" || name === "rate") {
       const quantity = parseFloat(item.quantity);
       const rate = parseFloat(item.rate);
@@ -332,10 +336,19 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
     updatedLineItems[index] = item;
     setLineItems(updatedLineItems);
 
-    // Update formData with the updated lineItems
+    // Calculate the new subtotal and balance due
+    const subtotal = updatedLineItems.reduce(
+      (sum, item) => sum + parseFloat(item.amount),
+      0
+    );
+    const balanceDue = subtotal - formData.amountPaid;
+
+    // Update formData with the updated lineItems, subtotal, and balanceDue
     setFormData((prevFormData) => ({
       ...prevFormData,
-      lineItems: [...updatedLineItems], // Spread the updated array
+      lineItems: [...updatedLineItems],
+      subtotal: subtotal,
+      balanceDue: balanceDue,
     }));
   };
 
@@ -377,12 +390,32 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
   };
 
   // for handling the values in the extra fields
+  // const handleExtraFieldChange = (index, field, value) => {
+  //   const updatedExtraFields = formData.extraFields.map((item, i) => {
+  //     if (i === index) {
+  //       return { ...item, [field]: value };
+  //     }
+  //     return item;
+  //   });
+
+  //   setFormData((prevFormData) => ({
+  //     ...prevFormData,
+  //     extraFields: updatedExtraFields,
+  //   }));
+
+  //   setExtraFields(updatedExtraFields);
+  // };
+
   const handleExtraFieldChange = (index, field, value) => {
-    setExtraFields((prevExtraFields) =>
-      prevExtraFields.map((item, i) =>
-        i !== index ? item : { ...item, [field]: value }
-      )
+    const updatedExtraFields = extraFields.map((item, i) =>
+      i !== index ? item : { ...item, [field]: value }
     );
+
+    setExtraFields(updatedExtraFields);
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      extraFields: updatedExtraFields,
+    }));
   };
 
   // For deleting extra fields
@@ -791,9 +824,7 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
                 )}
                 {!extraFields.some((field) => field.type === "Discount") && (
                   <Button
-                    onClick={(e) =>
-                      handleAddExtraField("Discount", 0)
-                    }
+                    onClick={(e) => handleAddExtraField("Discount", 0)}
                     variant="outlined"
                     color="green"
                     gap="5px"
@@ -806,9 +837,7 @@ const InvoiceDrawer = ({ isOpen, onOpen, onClose, selectedInvoice }) => {
                 )}
                 {!extraFields.some((field) => field.type === "Shipping") && (
                   <Button
-                    onClick={(e) =>
-                      handleAddExtraField("Shipping", 0)
-                    }
+                    onClick={(e) => handleAddExtraField("Shipping", 0)}
                     variant="outlined"
                     color="green"
                     gap="5px"
